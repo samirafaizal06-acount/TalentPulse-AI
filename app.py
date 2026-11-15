@@ -28,7 +28,12 @@ st.set_page_config(
     page_icon="🎯",
     layout="wide"
 )
-
+st.markdown(
+    "<div style='background:#0F294A; color:#D4AF37; padding:8px 14px; border-radius:8px; "
+    "border-left:4px solid #D4AF37; font-weight:600; margin-bottom:14px;'>"
+    "🎓 Developed by: Samira Faizal | BCA Final Year Major Project</div>",
+    unsafe_allow_html=True
+)
 # Custom Royal Navy & Gold Styling
 st.markdown("""
 <style>
