@@ -1,386 +1,456 @@
-import os
-import re
-import json
-import uuid
-from datetime import datetime
-import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
 import streamlit as st
-from pypdf import PdfReader
+import PyPDF2
+import os
 
-# Optional MongoDB & Gemini imports with graceful fallback
-try:
-    from pymongo import MongoClient
-    PYMONGO_AVAILABLE = True
-except ImportError:
-    PYMONGO_AVAILABLE = False
-
-try:
-    import google.generativeai as genai
-    GENAI_AVAILABLE = True
-except ImportError:
-    GENAI_AVAILABLE = False
-
-# ---------------- PAGE CONFIG ----------------
+# --- 1. PAGE CONFIG & GOOGLE SEO ---
 st.set_page_config(
-    page_title="TalentPulse AI | Intelligent Resume Screener & Interview Coach",
-    page_icon="🎯",
-    layout="wide"
+    page_title="TalentPulse AI | Global Career, Internship, HR & Executive Intelligence Hub by Samira",
+    page_icon="🌊",
+    layout="wide",
+    initial_sidebar_state="expanded",
+    menu_items={
+        "About": "TalentPulse AI — Universal Resume, Internship, HR Screening & CEO Leadership Intelligence Hub. Designed & Developed by Samira (BCA)."
+    }
 )
+
 st.markdown(
-    "<div style='background:#0F294A; color:#D4AF37; padding:8px 14px; border-radius:8px; "
-    "border-left:4px solid #D4AF37; font-weight:600; margin-bottom:14px;'>"
-    "🎓 Developed by: Samira.i | BCA Final Year Project</div>",
+    """
+    <meta name="description" content="TalentPulse AI by Samira (BCA) — World-Wide AI Resume & Internship Analyzer, HR Candidate Screener & CEO Executive Leadership Hub covering 35+ Global Sectors." />
+    <meta name="keywords" content="TalentPulse AI, Samira BCA, Resume Matcher, Internship Resume Checker, AI Cyber Cloud Data Science Resume, CA Resume, Medical Law Engineering Arts Resume, HR Screener, CEO Executive Bio" />
+    """,
     unsafe_allow_html=True
 )
-# Custom Royal Navy & Gold Styling
-st.markdown("""
-<style>
+
+# --- 2. DEEP SEA OCEAN GREEN THEME & ROMAN TYPOGRAPHY ---
+st.markdown(
+    """
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap');
+
+    html, body, [class*="css"] {
+        font-family: 'Lora', 'Times New Roman', Georgia, serif;
+        background-color: #031B1E;
+        color: #E6F4F1;
+    }
+
+    h1, h2, h3, .main-title {
+        font-family: 'Cinzel', 'Times New Roman', serif !important;
+        color: #4FD1C5 !important;
+        letter-spacing: 0.8px;
+    }
+
     .stApp {
-        background: linear-gradient(135deg, #050e21 0%, #0b1d3f 60%, #102a5c 100%);
-        color: #f8fafc;
+        background: linear-gradient(160deg, #021417 0%, #062C30 55%, #041F23 100%);
     }
-    h1, h2, h3 {
-        color: #ffd966 !important;
-        font-family: 'Georgia', serif;
+
+    .hero-banner {
+        background: rgba(13, 68, 74, 0.55);
+        border: 1px solid #2C7A7B;
+        border-left: 6px solid #38B2AC;
+        border-radius: 12px;
+        padding: 22px 26px;
+        margin-bottom: 18px;
     }
-    .metric-card {
-        background: rgba(255, 255, 255, 0.05);
-        border-left: 4px solid #d4af37;
-        padding: 16px;
+
+    .trust-badge {
+        background: rgba(44, 122, 123, 0.25);
+        border: 1px solid #38B2AC;
         border-radius: 8px;
-        margin-bottom: 10px;
+        padding: 10px 14px;
+        font-size: 0.9rem;
+        color: #B2F5EA;
+        margin-bottom: 14px;
     }
-    .badge-match {
-        background-color: #14532d;
-        color: #86efac;
-        padding: 4px 10px;
-        border-radius: 12px;
-        font-size: 0.85rem;
-        margin: 3px;
-        display: inline-block;
-    }
-    .badge-miss {
-        background-color: #7f1d1d;
-        color: #fca5a5;
-        padding: 4px 10px;
-        border-radius: 12px;
-        font-size: 0.85rem;
-        margin: 3px;
-        display: inline-block;
-    }
-</style>
-""", unsafe_allow_html=True)
 
-# ---------------- SAMPLE DATA ----------------
-SAMPLE_JOBS = {
-    "Full-Stack AI Developer (Entry Level)": {
-        "department": "Engineering",
-        "skills": ["Python", "Node.js", "MongoDB", "REST API", "Generative AI", "Prompt Engineering", "Git", "SQL", "JavaScript"],
-        "description": "Looking for a BCA/B.Tech graduate skilled in Python, Node.js, MongoDB CRUD operations, REST APIs, and Generative AI / Vertex AI prompt design to build intelligent web applications."
+    div.stButton > button {
+        background: linear-gradient(90deg, #0D9488 0%, #115E59 100%);
+        color: #FFFFFF !important;
+        font-family: 'Cinzel', serif !important;
+        font-weight: 700;
+        border: 1px solid #5EEAD4;
+        border-radius: 8px;
+        padding: 0.6rem 1.4rem;
+        transition: all 0.25s ease;
+    }
+
+    div.stButton > button:hover {
+        background: linear-gradient(90deg, #14B8A6 0%, #0F766E 100%);
+        border-color: #CCFBF1;
+        transform: translateY(-1px);
+    }
+
+    .stTextArea textarea, .stSelectbox div[data-baseweb="select"] {
+        background-color: #072A2E !important;
+        color: #E6F4F1 !important;
+        border: 1px solid #2C7A7B !important;
+    }
+
+    .footer-credit {
+        text-align: center;
+        padding: 18px;
+        margin-top: 30px;
+        border-top: 1px solid #2C7A7B;
+        background: rgba(2, 20, 23, 0.7);
+        border-radius: 10px;
+        color: #99F6E4;
+        font-size: 0.95rem;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+# --- 3. GEMINI AI CLIENT SETUP ---
+def get_api_key():
+    if "GEMINI_API_KEY" in st.secrets:
+        return st.secrets["GEMINI_API_KEY"]
+    return os.environ.get("GEMINI_API_KEY", "")
+
+def generate_ai_response(prompt_text, user_api_key=""):
+    api_key = user_api_key.strip() if user_api_key.strip() else get_api_key()
+    if not api_key:
+        return "⚠️ **API Key Missing:** Please add `GEMINI_API_KEY` in Streamlit Secrets or enter it in the sidebar."
+
+    try:
+        from google import genai
+        client = genai.Client(api_key=api_key)
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt_text
+        )
+        return response.text
+    except Exception:
+        try:
+            import google.generativeai as genai_legacy
+            genai_legacy.configure(api_key=api_key)
+            model = genai_legacy.GenerativeModel("gemini-1.5-flash")
+            response = model.generate_content(prompt_text)
+            return response.text
+        except Exception as e:
+            return f"❌ **AI Engine Error:** {str(e)}"
+
+# --- 4. PDF TEXT EXTRACTION ---
+def extract_text_from_pdf(uploaded_file):
+    reader = PyPDF2.PdfReader(uploaded_file)
+    extracted = ""
+    for page in reader.pages:
+        page_text = page.extract_text()
+        if page_text:
+            extracted += page_text + "\n"
+    return extracted.strip()
+
+# --- 5. COMPLETE 35+ WORLD-WIDE SECTORS, INTERNSHIPS & PROFESSIONS DATABASE ---
+UNIVERSAL_JOB_ROLES = {
+    "✍️ Custom Job / Internship Description (Paste Any JD)": {
+        "Paste Your Own Job or Internship Description": ""
     },
-    "Data & Business Intelligence Analyst": {
-        "department": "Analytics",
-        "skills": ["Python", "Pandas", "SQL", "MongoDB", "Data Visualization", "Excel", "Statistics", "Power BI", "ETL"],
-        "description": "Seeking an analyst proficient in Python, Pandas, SQL, MongoDB aggregation, data cleaning, and interactive dashboard reporting."
+
+    # 1. STUDENT INTERNSHIPS & INDUSTRIAL TRAINING (ALL STREAMS)
+    "🚀 Student Internships & Industrial Training (All Streams)": {
+        "AI / Machine Learning / Python Intern": "Seeking a college student intern with Python basics, Pandas, Generative AI / API handling, mini-projects, and strong analytical problem-solving attitude.",
+        "Data Analytics & Business Intelligence Intern": "Looking for a student intern skilled in MS Excel, SQL basics, Python/R, Power BI or Tableau dashboards, and data cleaning.",
+        "Cybersecurity & Cloud Operations Intern": "Seeking an intern with networking fundamentals (TCP/IP), Linux command-line basics, OWASP awareness, cloud sandbox exposure, and documentation skills.",
+        "Full-Stack Web / App Development Intern": "Looking for a student intern familiar with HTML5, CSS3, JavaScript, React or Python (Streamlit/Flask), and GitHub project hosting.",
+        "HR, Digital Marketing & Management Intern (BBA / MBA / Arts)": "Looking for an enthusiastic student intern for social media content, recruitment coordination, market research, Canva design, and Excel tracking.",
+        "Finance, Accounting & CA Articleship Intern (B.Com / CA / M.Com)": "Seeking a commerce/CA student intern with Tally Prime, MS Excel, GST documentation basics, vouching, and strong numerical accuracy.",
+        "R&D / Lab / Clinical / Legal Research Intern (Science / Medical / Law)": "Looking for a dedicated student intern with strong subject fundamentals, lab/legal/clinical documentation skills, and analytical reporting."
     },
-    "Cloud & Backend Associate": {
-        "department": "Cloud Infrastructure",
-        "skills": ["Node.js", "MongoDB", "Google Cloud", "Docker", "Linux", "API Security", "Python", "Git"],
-        "description": "Entry-level backend engineer to build scalable NoSQL databases in MongoDB, Node.js microservices, and Google Cloud AI integrations."
+
+    # 2. ARTIFICIAL INTELLIGENCE, ML & DATA SCIENCE (B.Sc AI / DS)
+    "🤖 Artificial Intelligence, Machine Learning & Data Science (B.Sc AI / DS)": {
+        "AI / Generative AI & LLM Engineer": "Seeking an AI graduate skilled in Python, Generative AI, Prompt Engineering, LangChain/RAG pipelines, Hugging Face, NLP, and LLM API integrations.",
+        "Machine Learning & Deep Learning Engineer": "Looking for an ML Engineer proficient in Scikit-Learn, TensorFlow/PyTorch, neural networks, computer vision (OpenCV), model evaluation, and deployment.",
+        "Data Scientist & Predictive Modeler": "Seeking a Data Science graduate skilled in Python (Pandas, NumPy), R, statistical modeling, feature engineering, A/B testing, and SQL.",
+        "Data Analyst & BI Visualization Specialist": "Looking for a Data Analyst proficient in SQL, Advanced Excel, Power BI, Tableau, data cleaning, dashboard storytelling, and KPI reporting."
+    },
+
+    # 3. CYBERSECURITY & ETHICAL HACKING (B.Sc Cyber Security)
+    "🛡️ Cybersecurity, Ethical Hacking & Digital Forensics": {
+        "SOC Analyst (Security Operations Center)": "Seeking a Cybersecurity graduate skilled in SIEM monitoring (Splunk/QRadar), incident response, threat intelligence, log analysis, and firewall rules.",
+        "Penetration Tester / Ethical Hacker (VAPT)": "Looking for an Ethical Hacker proficient in Kali Linux, Metasploit, Burp Suite, Nmap, OWASP Top 10 web vulnerabilities, and VAPT reporting.",
+        "Digital Forensics & Network Security Engineer": "Seeking a security specialist with knowledge of TCP/IP, Wireshark packet analysis, cryptography, ISO 27001, and endpoint security."
+    },
+
+    # 4. CLOUD COMPUTING & DEVOPS
+    "☁️ Cloud Computing, DevOps & Site Reliability": {
+        "Cloud Solutions Associate (AWS / Azure / GCP)": "Seeking a Cloud graduate skilled in AWS (EC2, S3, IAM, Lambda) or Azure fundamentals, virtual networking (VPC), cloud security, and cost optimization.",
+        "DevOps & CI/CD Automation Engineer": "Looking for a DevOps engineer familiar with Linux administration, Git/GitHub Actions, Docker containers, Kubernetes basics, and Terraform.",
+        "Cloud Support & Systems Administrator": "Seeking an IT/Cloud graduate skilled in Windows/Linux servers, shell scripting, backup & disaster recovery, and cloud monitoring."
+    },
+
+    # 5. BCA / COMPUTER SCIENCE / SOFTWARE ENGINEERING
+    "💻 BCA / B.Sc CS / Software Engineering": {
+        "Software Developer (Fresher)": "Looking for a BCA / B.Sc CS fresher with strong fundamentals in Python, Java, or C++, OOPs, Data Structures, SQL, Git, and problem-solving skills.",
+        "Full-Stack Web Developer": "Seeking a Web Developer skilled in HTML5, CSS3, JavaScript, React.js, Node.js, REST APIs, and MySQL/MongoDB.",
+        "Mobile App Developer (Flutter / Android)": "Looking for an app developer skilled in Flutter/Dart or Kotlin/Java, Firebase integration, REST APIs, and responsive UI design.",
+        "Software Tester / QA Automation Engineer": "Seeking a QA Engineer with knowledge of Manual Testing, SDLC/STLC, test case design, Jira, and Selenium automation."
+    },
+
+    # 6. GLOBAL C-SUITE & EXECUTIVE LEADERSHIP
+    "👔 C-Suite, CEO & Global Executive Leadership": {
+        "Chief Executive Officer (CEO) / Managing Director": "Seeking a visionary CEO / Managing Director with proven P&L ownership, corporate strategy, global market expansion, board governance, M&A leadership, fundraising, and organizational transformation experience.",
+        "Chief Technology Officer (CTO) / VP Engineering": "Looking for a strategic CTO skilled in enterprise architecture, AI/Cloud transformation, engineering team scaling, product roadmap execution, cybersecurity governance, and R&D innovation.",
+        "Chief Financial Officer (CFO)": "Seeking a seasoned CFO experienced in corporate finance, capital allocation, IPO/fundraising readiness, risk management, investor relations, global compliance, and financial forecasting.",
+        "Chief Operating Officer (COO) / Startup Founder": "Looking for an execution-driven COO / Founder skilled in scaling global operations, supply chain optimization, cross-functional leadership, unit economics, and strategic partnerships."
+    },
+
+    # 7. CHARTERED ACCOUNTANT (CA / CS / CMA)
+    "🧾 Chartered Accountant, Audit & Corporate Governance (CA / CS / CMA)": {
+        "Chartered Accountant (CA) — Statutory Audit & Assurance": "Seeking a qualified Chartered Accountant (ICAI) skilled in statutory audit, Ind AS / IFRS compliance, internal financial controls (IFC), tax audit, financial statement finalization, and risk advisory.",
+        "CA Articleship Trainee (IPCC / Inter Qualified)": "Looking for a CA Intermediate (Group 1 / Both Groups) student for Articleship training in statutory audit, GST compliance, income tax filings, vouching, and Tally/SAP accounting.",
+        "Direct & Indirect Taxation Specialist (GST / Corporate Tax)": "Seeking a CA / tax consultant experienced in corporate tax planning, GST returns & litigation, TDS compliance, transfer pricing, and assessment representation.",
+        "Company Secretary (CS) & Corporate Compliance Officer": "Looking for a qualified Company Secretary (ICSI) skilled in Companies Act 2013 compliance, SEBI regulations, ROC filings, board meeting governance, and secretarial audit.",
+        "Cost & Management Accountant (CMA)": "Seeking a CMA (ICMAI) skilled in cost accounting, budgeting, variance analysis, inventory valuation, ERP costing modules, and management reporting."
+    },
+
+    # 8. FACULTY, TEACHERS & ACADEMIC LEADERSHIP
+    "👩‍🏫 Faculty, Teachers & Academic Leadership": {
+        "Assistant Professor (Arts, Science & Commerce)": "Seeking an Assistant Professor with a Postgraduate degree (55%+), UGC NET/SET qualification or Ph.D., strong subject expertise, research paper publications (Scopus/UGC Care), curriculum delivery, and student mentoring skills.",
+        "Professor / Head of Department (HOD)": "Looking for an experienced Professor / HOD with a Ph.D., 10+ years of teaching and research experience, academic administration, NAAC/NIRF documentation, Ph.D. scholar guidance, and funded research projects.",
+        "School Teacher (PGT / TGT / Montessori)": "Seeking a passionate B.Ed. / M.Ed. qualified teacher skilled in interactive lesson planning, NEP 2020 pedagogy, classroom management, student assessment, and parent communication.",
+        "Lab Instructor / Technical Demonstrator": "Seeking a Lab Instructor skilled in handling laboratory equipment, experiment setup, student lab guidance, safety compliance, and stock register maintenance.",
+        "Placement Officer / Career Counselor": "Looking for a Training & Placement Officer skilled in corporate tie-ups, campus recruitment drives, aptitude & soft-skills training coordination, and student career counseling."
+    },
+
+    # 9. RESEARCH & DOCTORAL (Ph.D. / M.Phil)
+    "🔬 Ph.D. / M.Phil Scholars & Researchers": {
+        "Post-Doctoral Research Fellow": "Seeking a Ph.D. holder with strong research methodology, peer-reviewed publications (Scopus/SCI), grant proposal writing, data analysis, and independent lab/field research leadership.",
+        "Research Associate / Project Fellow (UGC / DST / CSIR)": "Looking for an M.Phil / Ph.D. scholar skilled in literature review, qualitative/quantitative research tools (SPSS, R, Python), thesis drafting, and research documentation.",
+        "Academic Journal Reviewer / Research Consultant": "Seeking a doctoral researcher with expertise in manuscript evaluation, research ethics, statistical validation, and academic publishing standards."
+    },
+
+    # 10. MEDICAL, HEALTHCARE & PHARMACY
+    "🩺 Doctors, Medical, Nursing & Pharmacy (MBBS / BDS / B.Pharm)": {
+        "Junior Resident Doctor / Duty Medical Officer (DMO)": "Seeking an MBBS graduate registered with the Medical Council, skilled in patient diagnosis, emergency care, OP/IP management, clinical documentation, and medical ethics.",
+        "Dental Surgeon (BDS / MDS)": "Looking for a Dental Surgeon skilled in general dentistry, root canal treatment, extractions, preventive oral care, patient counseling, and clinical hygiene protocols.",
+        "Clinical Pharmacist / Drug Safety Associate (B.Pharm / Pharm.D)": "Seeking a Pharmacy graduate skilled in prescription verification, pharmacovigilance, drug interaction monitoring, inventory management, and regulatory compliance.",
+        "Staff Nurse / Healthcare Coordinator (B.Sc Nursing / GNM)": "Looking for a Nursing graduate skilled in patient care, ICU/ward monitoring, medication administration, infection control, and electronic health records."
+    },
+
+    # 11. LAW & LEGAL
+    "⚖️ Law Students & Legal Professionals (LLB / LLM)": {
+        "Junior Advocate / Litigation Associate": "Seeking an LLB graduate enrolled with the Bar Council, skilled in legal drafting (plaints, petitions, affidavits), case research (SCC Online, Manupatra), and court appearances.",
+        "Corporate Legal Counsel / Contract Specialist": "Looking for a law graduate skilled in contract drafting, NDA review, corporate compliance, company law, intellectual property (IPR), and due diligence.",
+        "Legal Researcher & Paralegal Intern": "Seeking a law student proficient in statutory interpretation, legal notice drafting, case brief preparation, and regulatory research."
+    },
+
+    # 12. CIVIL SERVICES, GOVERNMENT & BANKING EXAMS
+    "🏛️ Civil Services, Govt & Banking Aspirants (UPSC / TNPSC / IBPS)": {
+        "UPSC / TNPSC Group 1 & 2 Administrative Aspirant": "Evaluating profile for public administration, policy analysis, governance, ethics, essay articulation, leadership, and current affairs analytical depth.",
+        "Bank Probationary Officer (IBPS / SBI PO)": "Seeking a graduate with strong quantitative aptitude, financial awareness, customer service orientation, credit assessment basics, and digital banking knowledge.",
+        "Public Policy & Governance Fellow": "Looking for a candidate skilled in socio-economic data analysis, field research, government scheme evaluation, and stakeholder coordination."
+    },
+
+    # 13. ENGINEERING (ECE / EEE / MECH / CIVIL / AUTOMOBILE)
+    "⚙️ Engineering Graduates (B.E / B.Tech — All Branches)": {
+        "Embedded Systems & IoT Engineer (ECE / EEE)": "Seeking an ECE/EEE graduate skilled in C/C++, microcontrollers (ARM, ESP32, Arduino), PCB design, sensors, and IoT communication protocols.",
+        "Mechanical Design & CAD Engineer (Mech)": "Looking for a Mechanical Engineer proficient in AutoCAD, SolidWorks, CATIA, GD&T, thermal/manufacturing processes, and quality control.",
+        "Civil Site & Structural Engineer (Civil)": "Seeking a Civil Engineer skilled in AutoCAD, STAAD.Pro, quantity surveying, estimation, site supervision, and concrete quality testing.",
+        "EV & Power Systems Engineer (EEE / Auto)": "Looking for an engineer familiar with Electric Vehicle (EV) battery management systems (BMS), motor drives, PLC/SCADA, and renewable power grids."
+    },
+
+    # 14. DIPLOMA & POLYTECHNIC
+    "🛠️ Diploma & Polytechnic Students": {
+        "Junior Engineer / Production Trainee": "Seeking a Diploma holder skilled in shop-floor supervision, machine operation, AutoCAD basics, quality inspection, and industrial safety.",
+        "IT & Network Support Technician": "Looking for a Diploma CS/IT graduate skilled in PC hardware troubleshooting, LAN/Wi-Fi networking, OS installation, and technical support.",
+        "Automobile Service & Maintenance Technician": "Seeking a Diploma Automobile graduate familiar with vehicle diagnostics, engine servicing, electrical systems, and workshop operations."
+    },
+
+    # 15. ARCHITECTURE & INTERIOR DESIGN
+    "🏛️ Architecture & Interior Designing (B.Arch / B.Des)": {
+        "Junior Architect (B.Arch)": "Seeking an Architecture graduate proficient in AutoCAD, Revit (BIM), SketchUp, Lumion/V-Ray rendering, building codes, and working drawings.",
+        "Interior Designer & 3D Visualizer": "Looking for an Interior Designer skilled in space planning, 3ds Max, SketchUp, material selection, lighting design, and client presentations."
+    },
+
+    # 16. FASHION DESIGNING & TEXTILES
+    "👗 Fashion Designing & Apparel Technology": {
+        "Fashion Designer / Apparel Stylist": "Seeking a Fashion Design graduate skilled in garment construction, pattern making, draping, fabric sourcing, trend forecasting, and Adobe Illustrator / CLO 3D.",
+        "Fashion Merchandiser & Retail Buyer": "Looking for a fashion graduate skilled in visual merchandising, inventory planning, vendor coordination, costing, and seasonal collection management.",
+        "Costume & Bridal Wear Designer": "Seeking a creative designer experienced in embroidery detailing, bridal wear customization, client consultations, and boutique production management."
+    },
+
+    # 17. BEAUTICIAN, COSMETOLOGY & WELLNESS
+    "💄 Beautician, Cosmetology & Makeup Artistry": {
+        "Professional Makeup Artist (Bridal & Editorial)": "Seeking a certified Makeup Artist skilled in HD/Airbrush bridal makeup, skin tone analysis, hairstyling, hygiene standards, and client consultation.",
+        "Senior Beautician & Skin Care Specialist": "Looking for a trained beautician proficient in facials, skin treatments, waxing, threading, hair spa, salon hygiene, and customer care.",
+        "Cosmetologist & Salon Manager": "Seeking a cosmetology professional skilled in advanced skin/hair therapies, product recommendations, appointment scheduling, and salon operations."
+    },
+
+    # 18. AVIATION, HOSPITALITY, CULINARY & TOURISM
+    "✈️ Aviation, Hotel Management & Culinary Arts": {
+        "Cabin Crew / Ground Staff & Airport Operations": "Seeking a hospitality-focused candidate with exceptional grooming, safety & first-aid awareness, passenger handling, crisis communication, and multilingual fluency.",
+        "Hotel Operations & Front Office Executive": "Looking for a Hotel Management graduate skilled in guest relations, reservation systems (Opera PMS), housekeeping standards, and F&B service.",
+        "Commis Chef / Culinary Specialist": "Seeking a Culinary graduate skilled in continental/Indian cuisine preparation, food safety (HACCP), kitchen hygiene, menu costing, and plating."
+    },
+
+    # 19. MEDIA, CINEMA, JOURNALISM & DESIGN
+    "🎬 Visual Communication, Media, Film & Graphic Design": {
+        "UI/UX & Brand Graphic Designer": "Seeking a creative designer skilled in Figma, Adobe Photoshop, Illustrator, wireframing, typography, and brand identity.",
+        "Video Editor & Motion Graphics Artist": "Looking for a video editor proficient in Premiere Pro, After Effects, DaVinci Resolve, color grading, sound sync, and reels/YouTube storytelling.",
+        "Journalist, News Anchor & Content Creator": "Seeking a media graduate skilled in scriptwriting, investigative reporting, on-camera anchoring, interviewing, and digital media production."
+    },
+
+    # 20. AGRICULTURE, FOOD TECH & VETERINARY
+    "🌱 Agriculture, Food Technology & Veterinary Sciences": {
+        "Agronomist / Agribusiness Officer (B.Sc Agri)": "Seeking an Agriculture graduate skilled in crop management, soil health analysis, precision farming, agri-inputs marketing, and farmer advisory.",
+        "Food Quality & Safety Officer (B.Tech Food Tech)": "Looking for a Food Technology graduate familiar with FSSAI regulations, HACCP, ISO 22000, quality testing, and food processing operations."
+    },
+
+    # 21. SPORTS, PHYSIOTHERAPY & FITNESS
+    "🏅 Physiotherapy, Sports Science & Fitness (BPT / B.P.Ed)": {
+        "Clinical & Sports Physiotherapist (BPT / MPT)": "Seeking a Physiotherapist skilled in musculoskeletal rehabilitation, ortho/neuro therapy, sports injury recovery, electrotherapy, and patient exercise prescription.",
+        "Certified Fitness Coach & Nutrition Advisor": "Looking for a fitness professional skilled in strength & conditioning, functional training, body composition assessment, and personalized diet planning."
+    },
+
+    # 22. COMMERCE & MANAGEMENT (BBA / MBA / B.COM / M.COM)
+    "💼 Management & Business (BBA / MBA)": {
+        "HR Executive / Talent Acquisition": "Seeking a BBA/MBA fresher skilled in recruitment sourcing, resume screening, interview coordination, onboarding, and HRIS.",
+        "Business Development & Sales Manager": "Looking for a growth-driven professional with strong B2B/B2C sales, lead generation, client pitching, negotiation, and CRM skills.",
+        "Digital Marketing & Growth Strategist": "Seeking a Digital Marketer skilled in SEO, Meta/Google Ads, social media strategy, content funnels, and Google Analytics."
+    },
+
+    "📊 Commerce & Finance (B.Com / M.Com)": {
+        "Senior Accountant / Tally & GST Executive": "Seeking a B.Com/M.Com graduate skilled in Tally Prime, GST/TDS filing, balance sheet finalization, bank reconciliation, and Advanced Excel.",
+        "Financial & Investment Analyst": "Looking for a Finance graduate skilled in financial modeling, equity research, ratio analysis, budgeting, and valuation."
+    },
+
+    # 23. ARTS, HUMANITIES & LANGUAGES (BA / MA / TAMIL)
+    "📚 Arts & Humanities (BA / MA — English / Econ / History)": {
+        "Content Writer, Copywriter & Editor": "Seeking a graduate with strong English proficiency, SEO blog writing, brand copywriting, proofreading, and storytelling skills.",
+        "Corporate Communications & PR Specialist": "Looking for a candidate skilled in press releases, internal communications, event management, and public speaking."
+    },
+
+    "🌺 BA / MA Tamil (தமிழ் இலக்கியம் & ஊடகம்)": {
+        "Tamil Content Writer & Translator": "Seeking a Tamil graduate skilled in English-to-Tamil translation, creative writing, proofreading, and digital content creation.",
+        "Tamil Media, News & Script Writer": "Looking for a candidate proficient in Tamil journalism, news reporting, video scriptwriting, anchoring, and subtitling.",
+        "Tamil Teacher / Language Trainer": "Looking for a passionate Tamil graduate with strong grammar (Ilakkanam), literature knowledge, and classroom teaching skills."
+    },
+
+    # 24. PURE SCIENCES (CHEMISTRY / PHYSICS / MATHS / BIOTECH)
+    "🧪 B.Sc / M.Sc Chemistry & Biotechnology": {
+        "Quality Control (QC) / Analytical Chemist (HPLC / GC)": "Seeking a Chemistry/Biotech graduate skilled in wet lab analysis, HPLC, UV-Vis Spectrophotometer, GMP/SOP compliance, and lab documentation.",
+        "Clinical Research & Pharma Associate": "Looking for a Life Sciences graduate familiar with clinical trials, GCP guidelines, medical terminology, and regulatory documentation."
+    },
+
+    "⚛️ B.Sc / M.Sc Physics": {
+        "Instrumentation & Lab Calibration Engineer": "Seeking a Physics graduate skilled in electronic lab instruments, oscilloscopes, sensors, calibration, and data logging.",
+        "Solar & Renewable Energy Analyst": "Looking for a Physics graduate with knowledge of photovoltaic (PV) systems, energy auditing, and sustainable power testing."
+    },
+
+    "📐 B.Sc / M.Sc Mathematics & Statistics": {
+        "Data Scientist / Statistical Analyst": "Seeking a Mathematics/Statistics graduate strong in probability, hypothesis testing, regression modeling, SQL, Python/R, and Excel.",
+        "Actuarial & Quantitative Risk Analyst": "Looking for a Mathematics graduate with strong quantitative aptitude, financial mathematics, stochastic modeling, and risk forecasting."
+    },
+
+    # 25. SOCIAL WORK (MSW)
+    "🤝 MSW (Master of Social Work — HR / CSR / Medical)": {
+        "HR & Employee Welfare Officer": "Seeking an MSW (HR specialization) graduate skilled in labor laws, employee engagement, grievance handling, and recruitment.",
+        "CSR & NGO Project Coordinator": "Looking for an MSW graduate experienced in community development projects, NGO partnerships, impact assessment, and CSR reporting."
     }
 }
 
-SAMPLE_RESUMES = {
-    "Samira I (BCA Final Year - Strong Match)": """SAMIRA I
-BCA Final Year Student | Chennai, India
-Skills: Python, Node.js, MongoDB, CRUD Operations, Google Cloud, Generative AI, Prompt Engineering, Vertex AI, Git, HTML, CSS, JavaScript
-Certifications:
-- MongoDB CRUD Operations in Node.js (SmartBridge & MongoDB)
-- MongoDB Basics for Students
-- Prompt Design in Vertex AI (Google Cloud Skill Badge)
-- Google Cloud Generative AI Foundations Workshop
-Projects:
-- Built NoSQL backend APIs with MongoDB CRUD operations and Node.js.
-- Designed structured LLM prompts in Google Cloud Vertex AI for automated text classification.""",
-    "Arjun K (Data Focus - Moderate Match)": """ARJUN K
-B.Sc Computer Science | Bengaluru
-Skills: Python, Pandas, SQL, Excel, Data Visualization, Power BI, Git
-Projects:
-- Retail sales dashboard using Python and Power BI.
-- Relational database schema design in MySQL."""
-}
-
-# ---------------- DATABASE LAYER (MONGODB + FALLBACK) ----------------
-DATA_FILE = "talentpulse_records.json"
-
-def get_db_collection(mongo_uri: str):
-    if mongo_uri and PYMONGO_AVAILABLE:
-        try:
-            client = MongoClient(mongo_uri, serverSelectionTimeoutMS=3000)
-            client.admin.command("ping")
-            db = client["talentpulse_ai"]
-            return db["evaluations"], "MongoDB Atlas (Live Cloud)"
-        except Exception:
-            pass
-    return None, "Local Document Store (MongoDB Schema Compatible)"
-
-def load_records(mongo_uri: str):
-    col, mode = get_db_collection(mongo_uri)
-    if col is not None:
-        docs = list(col.find({}, {"_id": 0}))
-        return docs, mode
-    if not os.path.exists(DATA_FILE):
-        seed = [{
-            "record_id": "TP-1001",
-            "candidate_name": "Samira I",
-            "target_role": "Full-Stack AI Developer (Entry Level)",
-            "ats_score": 89,
-            "status": "Shortlisted",
-            "matched_skills": ["Python", "Node.js", "MongoDB", "Generative AI", "Prompt Engineering", "Git", "JavaScript"],
-            "missing_skills": ["REST API", "SQL"],
-            "timestamp": "2026-11-14 10:30"
-        }]
-        with open(DATA_FILE, "w") as f:
-            json.dump(seed, f, indent=2)
-    with open(DATA_FILE, "r") as f:
-        return json.load(f), mode
-
-def save_record(record: dict, mongo_uri: str):
-    col, _ = get_db_collection(mongo_uri)
-    if col is not None:
-        col.insert_one(record.copy())
-        return
-    records, _ = load_records("")
-    records.insert(0, record)
-    with open(DATA_FILE, "w") as f:
-        json.dump(records, f, indent=2)
-
-def update_record_status(record_id: str, new_status: str, mongo_uri: str):
-    col, _ = get_db_collection(mongo_uri)
-    if col is not None:
-        col.update_one({"record_id": record_id}, {"$set": {"status": new_status}})
-        return
-    records, _ = load_records("")
-    for r in records:
-        if r["record_id"] == record_id:
-            r["status"] = new_status
-    with open(DATA_FILE, "w") as f:
-        json.dump(records, f, indent=2)
-
-def delete_record(record_id: str, mongo_uri: str):
-    col, _ = get_db_collection(mongo_uri)
-    if col is not None:
-        col.delete_one({"record_id": record_id})
-        return
-    records, _ = load_records("")
-    records = [r for r in records if r["record_id"] != record_id]
-    with open(DATA_FILE, "w") as f:
-        json.dump(records, f, indent=2)
-
-# ---------------- AI / VERTEX PROMPT ENGINE ----------------
-def analyze_resume(resume_text: str, role_title: str, job_info: dict, gemini_key: str):
-    req_skills = job_info["skills"]
-    resume_lower = resume_text.lower()
-    matched = [s for s in req_skills if s.lower() in resume_lower]
-    missing = [s for s in req_skills if s.lower() not in resume_lower]
-    base_score = int((len(matched) / max(len(req_skills), 1)) * 100)
-
-    # Default structured response (works offline/without API key)
-    result = {
-        "ats_score": min(98, max(25, base_score + (8 if "project" in resume_lower else 0))),
-        "matched_skills": matched,
-        "missing_skills": missing,
-        "summary": f"Candidate matches {len(matched)} of {len(req_skills)} core skills required for {role_title}. Strong alignment in {', '.join(matched[:3]) if matched else 'foundational skills'}.",
-        "improvements": [
-            f"Add hands-on project bullet points demonstrating {', '.join(missing[:2])}." if missing else "Quantify project impact with latency or accuracy metrics.",
-            "Include GitHub repository links and live deployment URLs for each technical project.",
-            "Highlight MongoDB schema design and prompt engineering workflows clearly."
-        ],
-        "interview_questions": [
-            f"Explain how you implemented CRUD operations and indexing in MongoDB for {role_title}.",
-            "How do you design system prompts and few-shot examples in Vertex AI to reduce LLM hallucinations?",
-            f"Walk through a real bug you solved while working with {matched[0] if matched else 'Python'}."
-        ],
-        "engine": "Built-in Structured ATS Engine"
-    }
-
-    # Live Gemini / Vertex AI Prompt Design Mode if API key is provided
-    if gemini_key and GENAI_AVAILABLE:
-        try:
-            genai.configure(api_key=gemini_key)
-            model = genai.GenerativeModel("gemini-1.5-flash")
-            prompt = f"""
-            You are an expert Technical Recruiter & Vertex AI Prompt Engineer.
-            Analyze the following Resume against the Target Job Role and return ONLY valid JSON with keys:
-            "ats_score" (int 0-100), "summary" (string), "improvements" (list of 3 strings), "interview_questions" (list of 3 technical questions).
-
-            Target Role: {role_title}
-            Job Description: {job_info['description']}
-            Required Skills: {', '.join(req_skills)}
-
-            Resume Text:
-            {resume_text}
-            """
-            response = model.generate_content(prompt)
-            clean_json = re.sub(r"```json|```", "", response.text).strip()
-            ai_data = json.loads(clean_json)
-            result["ats_score"] = int(ai_data.get("ats_score", result["ats_score"]))
-            result["summary"] = ai_data.get("summary", result["summary"])
-            result["improvements"] = ai_data.get("improvements", result["improvements"])
-            result["interview_questions"] = ai_data.get("interview_questions", result["interview_questions"])
-            result["engine"] = "Google Generative AI / Vertex Prompt Engine"
-        except Exception:
-            pass
-
-    return result
-
-# ---------------- SIDEBAR CONFIG ----------------
+# --- 6. SIDEBAR SETTINGS ---
 with st.sidebar:
-    st.markdown("## 🎯 TalentPulse AI")
-    st.caption("Developed by **Samira I** | BCA Final Year Major Project")
-    st.divider()
-    st.markdown("### ⚙️ Cloud & AI Connectors")
-    mongo_uri = st.text_input("MongoDB Atlas URI (Optional)", type="password", placeholder="mongodb+srv://...")
-    gemini_key = st.text_input("Google AI / Gemini API Key (Optional)", type="password", placeholder="AIza...")
-    records, active_db_mode = load_records(mongo_uri)
-    st.success(f"**DB Active:** {active_db_mode}")
-    st.info("**Tech Stack:** MongoDB CRUD • Python • Streamlit • Vertex AI Prompt Design")
+    st.markdown("## 🌊 TalentPulse AI")
+    st.markdown("**Global Career, Internship, HR & Executive Hub**")
+    st.markdown("---")
 
-# ---------------- MAIN HEADER ----------------
-st.title("🎯 TalentPulse AI — Smart Resume Screener & Interview Coach")
-st.markdown("**AI-Powered ATS Screening, Skill-Gap Diagnostics & MongoDB Candidate Management System**")
+    output_lang = st.selectbox(
+        "🌍 Report Output Language:",
+        [
+            "English (Global Standard)",
+            "Tamil (தமிழ்)",
+            "Bilingual (English + தமிழ் Mix)"
+        ]
+    )
 
-tab1, tab2, tab3 = st.tabs(["🚀 AI Resume Analyzer", "🗄️ MongoDB Candidate CRUD", "📊 Recruitment Analytics"])
+    with st.expander("🔑 Custom API Key (Optional)"):
+        custom_api_key = st.text_input("Enter Gemini API Key:", type="password", help="Leave blank to use default server key.")
 
-# ---------------- TAB 1: ANALYZER ----------------
-with tab1:
-    col1, col2 = st.columns([1.1, 1])
+    st.markdown("---")
+    st.markdown(
+        """
+        **🌐 Global Coverage (35+ Sectors):**
+        * Student Internships (All Streams)
+        * AI/ML, Data Science, Cyber & Cloud
+        * CEOs, Founders & Corporate Boards
+        * CA, CS, CMA, Banking & Finance
+        * Doctors, Nurses, Dentists & Pharma
+        * Lawyers, Judges & Civil Services
+        * Teachers, Professors & Ph.D. Scholars
+        * Engineers, Diploma, Arch & Agri
+        * Fashion, Beauty, Aviation & Culinary
+        * Arts, Science, Commerce, Tamil & Sports
+        """
+    )
+    st.markdown("---")
+    st.caption("🏛️ **Creator:** Samira (BCA)\nDept. of Computer Applications")
+
+# --- 7. HERO BANNER ---
+st.markdown(
+    """
+    <div class="hero-banner">
+        <h1 class="main-title" style="margin-bottom:4px;">🌊 TALENTPULSE AI — GLOBAL EDITION</h1>
+        <p style="font-size:1.1rem; color:#B2F5EA; margin-bottom:6px;">
+            <b>Universal Resume &amp; Internship Intelligence, HR Screening &amp; Executive Leadership Platform</b>
+        </p>
+        <p style="font-size:0.92rem; color:#81E6D9; margin-bottom:0;">
+            Built for Every Career Stage &amp; Profession: Interns • Freshers • AI/Cyber/Cloud Specialists • CAs • Doctors • Lawyers • Teachers • Ph.D. Scholars • HR Recruiters • Global CEOs
+        </p>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    '<div class="trust-badge">🛡️ <b>100% Confidential &amp; Zero-Storage Privacy:</b> Your resumes and executive documents are analyzed in real time and never stored on any server.</div>',
+    unsafe_allow_html=True
+)
+
+# --- 8. 3-WAY GLOBAL MODE SELECTOR ---
+user_mode = st.radio(
+    "🌐 Choose Your Portal Mode:",
+    [
+        "🎓 Candidate / Intern / Professional / Faculty (Analyze My Resume)",
+        "🏢 HR / Recruiter (Screen Candidate Resume)",
+        "👔 CEO / Executive & Board Leadership"
+    ],
+    horizontal=True
+)
+
+st.markdown("---")
+
+# ==============================================================================
+# MODE 1: CANDIDATE / INTERN / STUDENT / SCHOLAR / FACULTY / ANY GLOBAL PROFESSION
+# ==============================================================================
+if user_mode == "🎓 Candidate / Intern / Professional / Faculty (Analyze My Resume)":
+    st.subheader("📄 Universal Career, Internship & Academic Resume Analyzer")
+
+    career_stage = st.radio(
+        "🎯 Your Career Stage:",
+        ["🌱 Student Internship / Fresher (0–1 Yrs)", "💼 Experienced / Full-Time / Academic / Senior Role"],
+        horizontal=True
+    )
+
+    col1, col2 = st.columns(2)
     with col1:
-        st.subheader("1. Candidate & Job Input")
-        cand_name = st.text_input("Candidate Name", value="Samira I")
-        selected_role = st.selectbox("Select Target Job Role", list(SAMPLE_JOBS.keys()))
-        job_info = SAMPLE_JOBS[selected_role]
-        st.caption(f"**Role Requirements:** {', '.join(job_info['skills'])}")
-
-        input_mode = st.radio("Resume Input Mode", ["Select Sample Resume", "Paste Resume Text", "Upload PDF Resume"], horizontal=True)
-        resume_text = ""
-        if input_mode == "Select Sample Resume":
-            sample_choice = st.selectbox("Choose Sample Profile", list(SAMPLE_RESUMES.keys()))
-            resume_text = st.text_area("Resume Content", value=SAMPLE_RESUMES[sample_choice], height=210)
-        elif input_mode == "Paste Resume Text":
-            resume_text = st.text_area("Paste Full Resume Here", height=210, placeholder="Paste skills, education, projects...")
-        else:
-            uploaded_pdf = st.file_uploader("Upload Candidate PDF", type=["pdf"])
-            if uploaded_pdf:
-                reader = PdfReader(uploaded_pdf)
-                resume_text = "\n".join([page.extract_text() or "" for page in reader.pages])
-                st.text_area("Extracted PDF Text", value=resume_text, height=160)
-
-        analyze_btn = st.button("✨ Run AI Screening & Save to MongoDB", type="primary", use_container_width=True)
-
+        selected_dept = st.selectbox("🏛️ Select Industry / Department / Profession:", list(UNIVERSAL_JOB_ROLES.keys()))
     with col2:
-        st.subheader("2. AI Evaluation & Interview Prep")
-        if analyze_btn and resume_text.strip():
-            analysis = analyze_resume(resume_text, selected_role, job_info, gemini_key)
-            rec_id = f"TP-{str(uuid.uuid4())[:4].upper()}"
-            status = "Shortlisted" if analysis["ats_score"] >= 70 else "Needs Upskilling"
+        dept_roles = UNIVERSAL_JOB_ROLES[selected_dept]
+        selected_role = st.selectbox("🎯 Select Target Role / Internship:", list(dept_roles.keys()))
 
-            new_doc = {
-                "record_id": rec_id,
-                "candidate_name": cand_name or "Candidate",
-                "target_role": selected_role,
-                "ats_score": analysis["ats_score"],
-                "status": status,
-                "matched_skills": analysis["matched_skills"],
-                "missing_skills": analysis["missing_skills"],
-                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M")
-            }
-            save_record(new_doc, mongo_uri)
+    jd_text = st.text_area(
+        "📋 Target Job / Internship Description (Auto-filled — You can edit or paste any custom JD):",
+        value=dept_roles[selected_role],
+        height=140,
+        placeholder="Select a category above or paste any Job/Internship Description here..."
+    )
 
-            # Gauge Chart
-            fig_gauge = go.Figure(go.Indicator(
-                mode="gauge+number",
-                value=analysis["ats_score"],
-                title={"text": f"ATS Match Score ({status})", "font": {"color": "#ffd966", "size": 18}},
-                number={"suffix": "%", "font": {"color": "#ffffff"}},
-                gauge={
-                    "axis": {"range": [0, 100], "tickcolor": "#ffd966"},
-                    "bar": {"color": "#d4af37"},
-                    "bgcolor": "#0b1d3f",
-                    "steps": [
-                        {"range": [0, 50], "color": "#450a0a"},
-                        {"range": [50, 75], "color": "#713f12"},
-                        {"range": [75, 100], "color": "#14532d"}
-                    ]
-                }
-            ))
-            fig_gauge.update_layout(height=230, margin=dict(l=20, r=20, t=40, b=10), paper_bgcolor="rgba(0,0,0,0)")
-            st.plotly_chart(fig_gauge, use_container_width=True)
+    uploaded_resume = st.file_uploader("📎 Upload Your Resume / CV / Portfolio (PDF):", type=["pdf"], key="cand_pdf")
 
-            st.markdown(f"**AI Executive Summary:** {analysis['summary']}")
-            st.markdown("**Matched Skills:** " + "".join([f"<span class='badge-match'>{s}</span>" for s in analysis["matched_skills"]]), unsafe_allow_html=True)
-            st.markdown("**Skill Gaps:** " + ("".join([f"<span class='badge-miss'>{s}</span>" for s in analysis["missing_skills"]]) if analysis["missing_skills"] else "None!"), unsafe_allow_html=True)
-
-            with st.expander("💡 Resume Optimization Tips & Mock Interview Questions", expanded=True):
-                st.markdown("**Resume Improvements:**")
-                for tip in analysis["improvements"]:
-                    st.markdown(f"- {tip}")
-                st.markdown("**Generated Technical Interview Questions:**")
-                for idx, q in enumerate(analysis["interview_questions"], 1):
-                    st.markdown(f"{idx}. {q}")
-            st.toast(f"Saved {cand_name} ({rec_id}) to Database!", icon="✅")
-        else:
-            st.info("Click **Run AI Screening & Save to MongoDB** to evaluate a candidate and store the record.")
-
-# ---------------- TAB 2: MONGODB CRUD ----------------
-with tab2:
-    st.subheader("🗄️ MongoDB Candidate Records (Create • Read • Update • Delete)")
-    records, _ = load_records(mongo_uri)
-    if records:
-        df = pd.DataFrame(records)
-        st.dataframe(df[["record_id", "candidate_name", "target_role", "ats_score", "status", "timestamp"]], use_container_width=True)
-
-        c1, c2, c3 = st.columns(3)
-        with c1:
-            selected_id = st.selectbox("Select Record ID", df["record_id"].tolist())
-        with c2:
-            new_stat = st.selectbox("Update Hiring Status", ["Shortlisted", "Interview Scheduled", "Selected", "Needs Upskilling", "Rejected"])
-            if st.button("🔄 Update Status (UPDATE)", use_container_width=True):
-                update_record_status(selected_id, new_stat, mongo_uri)
-                st.success(f"Updated {selected_id} to {new_stat}")
-                st.rerun()
-        with c3:
-            st.write("")
-            st.write("")
-            if st.button("🗑️ Delete Record (DELETE)", use_container_width=True):
-                delete_record(selected_id, mongo_uri)
-                st.warning(f"Deleted record {selected_id}")
-                st.rerun()
-    else:
-        st.info("No candidate records found yet.")
-
-# ---------------- TAB 3: ANALYTICS ----------------
-with tab3:
-    st.subheader("📊 Talent Pipeline & Skill-Gap Analytics")
-    records, _ = load_records(mongo_uri)
-    if records:
-        df = pd.DataFrame(records)
-        m1, m2, m3 = st.columns(3)
-        m1.metric("Total Screened Candidates", len(df))
-        m2.metric("Average ATS Score", f"{df['ats_score'].mean():.1f}%")
-        m3.metric("Shortlisted Rate", f"{(df['status'].isin(['Shortlisted', 'Interview Scheduled', 'Selected']).mean()*100):.0f}%")
-
-        ch1, ch2 = st.columns(2)
-        with ch1:
-            fig_bar = px.bar(df, x="candidate_name", y="ats_score", color="status",
-                             title="ATS Match Score by Candidate",
-                             color_discrete_sequence=["#d4af37", "#38bdf8", "#4ade80", "#f87171"])
-            fig_bar.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#ffffff")
-            st.plotly_chart(fig_bar, use_container_width=True)
-        with ch2:
-            fig_pie = px.pie(df, names="status", title="Candidate Pipeline Distribution",
-                             color_discrete_sequence=["#d4af37", "#2563eb", "#16a34a", "#dc2626"])
-            fig_pie.update_layout(paper_bgcolor="rgba(0,0,0,0)", font_color="#ffffff")
-            st.plotly_chart(fig_pie, use_container_width=True)
+    if st.button("⚡ Analyze My Resume & Generate ATS Upgrades"):
+        if uploaded_resume and jd_text.strip():
+            with st.spinner("🌊 Analyzing resume alignment, domain keywords & ATS impact..."):
+                resume_text = extract_text_from_pdf(uploaded_resume)
+                if not resume_text:
+                    st.error("❌ Could not read
