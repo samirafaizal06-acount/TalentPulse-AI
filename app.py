@@ -123,7 +123,7 @@ def generate_ai_response(prompt_text, user_api_key=""):
         try:
             import google.generativeai as genai_legacy
             genai_legacy.configure(api_key=api_key)
-            model = genai_legacy.GenerativeModel("gemini-1.5-flash")
+            model = genai_legacy.GenerativeModel("gemini-2.5-flash")
             response = model.generate_content(prompt_text)
             return response.text
         except Exception as e:
