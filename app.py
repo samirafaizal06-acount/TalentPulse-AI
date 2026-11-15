@@ -453,4 +453,175 @@ if user_mode == "🎓 Candidate / Intern / Professional / Faculty (Analyze My Re
             with st.spinner("🌊 Analyzing resume alignment, domain keywords & ATS impact..."):
                 resume_text = extract_text_from_pdf(uploaded_resume)
                 if not resume_text:
-                    st.error("❌ Could not read
+                    st.error("❌ Could not read text from this PDF. Please upload a text-based PDF (not a scanned image).")
+                else:
+                    cand_prompt = f"""
+                    You are an elite Global Career Strategist and ATS (Applicant Tracking System) Specialist.
+                    Output Language Requirement: {output_lang}
+                    Candidate Career Stage: {career_stage}
+
+                    Target Industry/Department: {selected_dept}
+                    Target Role / Internship: {selected_role}
+
+                    Job / Internship Description:
+                    {jd_text}
+
+                    Candidate Resume / CV:
+                    {resume_text}
+
+                    Tailor your evaluation strictly to their career stage ({career_stage} — e.g., for Internships/Freshers prioritize projects, coursework, hackathons, and learning agility; for Experienced/Academic roles prioritize measurable impact, publications, or leadership).
+
+                    Provide a comprehensive, high-impact evaluation including:
+                    1. **Overall ATS Match Score (0 - 100%)** with a clear verdict.
+                    2. **Matched Core Skills, Projects & Strengths** found in the resume.
+                    3. **Missing Keywords & Skill Gaps** compared to the Job/Internship Description.
+                    4. **✨ ATS Resume Bullet-Point Rewriter:** Write 3 quantified, high-impact resume bullet points the candidate can directly copy-paste into their resume to boost their score above 90%.
+                    5. **Actionable Next Steps** (certifications, mini-projects, labs, portfolio items, or formatting improvements tailored specifically to {selected_dept}).
+                    """
+                    result = generate_ai_response(cand_prompt, custom_api_key)
+                    st.markdown("### 📊 Resume & Internship Intelligence Report")
+                    st.markdown(result)
+
+                    st.download_button(
+                        label="📥 Download Resume Report (.md)",
+                        data=result,
+                        file_name=f"TalentPulse_Report_{selected_role.replace(' ', '_')}.md",
+                        mime="text/markdown"
+                    )
+        else:
+            st.warning("⚠️ Please upload your PDF resume and ensure a Job/Internship Description is selected or pasted.")
+
+# ==============================================================================
+# MODE 2: HR / RECRUITER SCREENING PORTAL
+# ==============================================================================
+elif user_mode == "🏢 HR / Recruiter (Screen Candidate Resume)":
+    st.subheader("🏢 HR & Recruiter — Smart Candidate & Intern Screening Portal")
+    st.caption("Evaluate applicant resumes across any global industry, detect red flags & auto-generate tailored interview questions.")
+
+    col_hr1, col_hr2 = st.columns(2)
+    with col_hr1:
+        hr_dept_preset = st.selectbox("🏛️ Quick Industry Template (Optional):", list(UNIVERSAL_JOB_ROLES.keys()), key="hr_dept")
+    with col_hr2:
+        hr_roles_dict = UNIVERSAL_JOB_ROLES[hr_dept_preset]
+        hr_role_preset = st.selectbox("🎯 Select Role Template:", list(hr_roles_dict.keys()), key="hr_role")
+
+    hr_jd = st.text_area(
+        "📋 Company Job / Internship Description & Must-Have Requirements:",
+        value=hr_roles_dict[hr_role_preset],
+        height=140,
+        placeholder="Paste your company's job or internship description, required skills, and experience criteria..."
+    )
+
+    hr_resume = st.file_uploader("📎 Upload Candidate Resume (PDF):", type=["pdf"], key="hr_pdf")
+
+    if st.button("🔍 Screen Candidate & Generate Interview Questions"):
+        if hr_resume and hr_jd.strip():
+            with st.spinner("🏢 Evaluating candidate fit, red flags & preparing interview guide..."):
+                resume_text = extract_text_from_pdf(hr_resume)
+                if not resume_text:
+                    st.error("❌ Could not read text from this PDF. Please upload a valid text-based PDF.")
+                else:
+                    hr_prompt = f"""
+                    You are a Senior Global HR Director & Talent Acquisition Lead.
+                    Output Language Requirement: {output_lang}
+
+                    Job / Internship Description:
+                    {hr_jd}
+
+                    Candidate Resume:
+                    {resume_text}
+
+                    Generate a structured HR Hiring Evaluation Report:
+                    1. **Candidate Fit Score (0 - 100%)**
+                    2. **Hiring Verdict:** [STRONGLY RECOMMEND / SHORTLIST FOR INTERVIEW / HOLD / REJECT] with a 2-sentence justification.
+                    3. **Verified Strengths, Projects & Relevant Experience**
+                    4. **Skill Gaps & Potential Red Flags**
+                    5. **5 Tailored Technical & Behavioral Interview Questions** specifically designed to test this candidate's resume claims and missing areas.
+                    """
+                    hr_result = generate_ai_response(hr_prompt, custom_api_key)
+                    st.markdown("### 📋 HR Candidate Screening Report")
+                    st.markdown(hr_result)
+
+                    st.download_button(
+                        label="📥 Download HR Screening Report (.md)",
+                        data=hr_result,
+                        file_name="TalentPulse_HR_Screening_Report.md",
+                        mime="text/markdown"
+                    )
+        else:
+            st.warning("⚠️ Please upload a candidate PDF resume and provide the Job Description.")
+
+# ==============================================================================
+# MODE 3: CEO / EXECUTIVE & BOARD LEADERSHIP PORTAL
+# ==============================================================================
+else:
+    st.subheader("👔 CEO, C-Suite & Global Board Leadership Portal")
+    st.caption("Designed for CEOs, Founders, CXOs & Corporate Boards — Strategic Vision, P&L Ownership & Board-Readiness Intelligence.")
+
+    exec_objective = st.selectbox(
+        "🎯 Select Executive Objective:",
+        [
+            "Evaluate My CEO / C-Suite Profile for Global & Board Roles",
+            "Screen an Executive Candidate (CEO / CTO / CFO / COO) for Our Board"
+        ]
+    )
+
+    exec_jd = st.text_area(
+        "📋 Board Mandate / Company Vision & Strategic KPIs:",
+        value=UNIVERSAL_JOB_ROLES["👔 C-Suite, CEO & Global Executive Leadership"]["Chief Executive Officer (CEO) / Managing Director"],
+        height=140,
+        placeholder="Enter board mandate, company stage (Startup / Enterprise), revenue scale, global expansion goals, or executive KPIs..."
+    )
+
+    exec_resume = st.file_uploader("📎 Upload Executive CV / Board Bio (PDF):", type=["pdf"], key="exec_pdf")
+
+    if st.button("🚀 Run Global Executive Intelligence Analysis"):
+        if exec_resume and exec_jd.strip():
+            with st.spinner("👔 Analyzing executive leadership impact, P&L alignment & board readiness..."):
+                resume_text = extract_text_from_pdf(exec_resume)
+                if not resume_text:
+                    st.error("❌ Could not read text from this PDF. Please upload a valid text-based PDF.")
+                else:
+                    exec_prompt = f"""
+                    You are an elite Global Executive Search Partner (Korn Ferry / Spencer Stuart caliber) and Corporate Board Advisor.
+                    Output Language Requirement: {output_lang}
+                    Objective: {exec_objective}
+
+                    Board Mandate / Executive Vision:
+                    {exec_jd}
+
+                    Executive CV / Bio:
+                    {resume_text}
+
+                    Deliver an Executive-Grade Assessment covering:
+                    1. **Executive & Board Readiness Score (0 - 100%)**
+                    2. **Strategic Vision, P&L Ownership & Global Scaling Impact**
+                    3. **Core Governance & C-Suite Leadership Strengths**
+                    4. **Strategic Blind Spots / Board-Level Risks**
+                    5. **3 High-Stakes Boardroom / Investor Due-Diligence Questions**
+                    6. **✨ Polished 3-Line Executive Bio** ready for Board Presentations, Investor Decks, or Global Keynotes.
+                    """
+                    exec_result = generate_ai_response(exec_prompt, custom_api_key)
+                    st.markdown("### 🏛️ Executive Leadership & Board Report")
+                    st.markdown(exec_result)
+
+                    st.download_button(
+                        label="📥 Download Executive Report (.md)",
+                        data=exec_result,
+                        file_name="TalentPulse_Executive_Leadership_Report.md",
+                        mime="text/markdown"
+                    )
+        else:
+            st.warning("⚠️ Please upload the Executive CV / Bio PDF and enter the Board Mandate.")
+
+# --- 9. PERMANENT DEVELOPER CREDIT FOOTER ---
+st.markdown(
+    """
+    <div class="footer-credit">
+        🌊 <b>TALENTPULSE AI — Global Career, Internship, HR &amp; Executive Intelligence Hub</b><br/>
+        Architected, Designed &amp; Developed by <b>Samira</b> — <i>Department of Computer Applications (BCA)</i> 🎓<br/>
+        <span style="font-size:0.83rem; color:#5EEAD4;">Covering 35+ Global Sectors • Empowering Interns, Students, Scholars, Educators, Recruiters &amp; World Leaders</span>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
