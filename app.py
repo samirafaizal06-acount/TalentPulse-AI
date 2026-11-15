@@ -443,7 +443,8 @@ if user_mode == "🎓 Candidate / Intern / Professional / Faculty (Analyze My Re
         "📋 Target Job / Internship Description (Auto-filled — You can edit or paste any custom JD):",
         value=dept_roles[selected_role],
         height=140,
-        placeholder="Select a category above or paste any Job/Internship Description here..."
+        placeholder="Select a category above or paste any Job/Internship Description here...",
+        key=f"jd_{selected_role}"
     )
 
     uploaded_resume = st.file_uploader("📎 Upload Your Resume / CV / Portfolio (PDF):", type=["pdf"], key="cand_pdf")
